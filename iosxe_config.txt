@@ -1,0 +1,33 @@
+hostname {test_cisco_name}
+!
+enable password cisco123
+!
+interface gig1
+ description {test_lan1_name}
+ ip address {test_lan1cisco_ip} {test_lan1_mask}
+ no shut
+!
+interface gig2
+ description {test_lan2_name}
+ ip address {test_lan2cisco_ip} {test_lan2_mask}
+ no shut
+!
+interface gig3
+ description {test_mgt0_name}
+ ip address {test_mgt0cisco_ip} {test_mgt0_mask}
+ no shut
+!
+ip route 0.0.0.0 0.0.0.0 {test_mgt0cisco_gw}
+!
+ip domain-name local
+!
+crypto key generate rsa modulus 1024
+!
+ip ssh version 2
+!
+username cisco secret cisco123
+!
+line vty 0 4
+login local
+transport input ssh
+password cisco123
