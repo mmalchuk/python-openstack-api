@@ -125,12 +125,12 @@ test_cisco_ports = [
 ]
 
 # launch the cisco instance
-test_os.instance_launch(test_cisco_name,
-                        "4468f4a2-96ac-4e1b-9a76-b3f185e4590d",
-                        "6",
-                        ports=test_cisco_ports,
-                        config_drive=True,
-                        personality=test_cisco_personality)
+test_os.server_create(test_cisco_name,
+                      "4468f4a2-96ac-4e1b-9a76-b3f185e4590d",
+                      "6",
+                      ports=test_cisco_ports,
+                      config_drive=True,
+                      personality=test_cisco_personality)
 
 # prepare linuxes user data
 with open('user-data.yaml') as f:
@@ -140,20 +140,20 @@ with open('user-data.yaml') as f:
 test_linux1_ports = [{"port": test_lan1linux1_id}]
 
 # launch the linux instance
-test_os.instance_launch(test_linux1_name,
-                        "96be672c-a1a2-46c0-a73f-4cd6a179186f",
-                        "2",
-                        networks=test_linux1_ports,
-                        config_drive=True,
-                        user_data=test_linux_user_data)
+test_os.server_create(test_linux1_name,
+                      "96be672c-a1a2-46c0-a73f-4cd6a179186f",
+                      "2",
+                      networks=test_linux1_ports,
+                      config_drive=True,
+                      user_data=test_linux_user_data)
 
 # create the ports object for the linux instance
 test_linux2_ports = [{"port": test_lan2linux2_id}]
 
 # launch the linux instance
-test_os.instance_launch(test_linux2_name,
-                        "96be672c-a1a2-46c0-a73f-4cd6a179186f",
-                        "2",
-                        networks=test_linux2_ports,
-                        config_drive=True,
-                        user_data=test_linux_user_data)
+test_os.server_create(test_linux2_name,
+                      "96be672c-a1a2-46c0-a73f-4cd6a179186f",
+                      "2",
+                      networks=test_linux2_ports,
+                      config_drive=True,
+                      user_data=test_linux_user_data)
