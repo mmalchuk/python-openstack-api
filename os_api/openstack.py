@@ -263,7 +263,7 @@ class OpenStackAPI:
         else:
             die(response)
 
-    def port_create(self, network_id, subnet_id, fixed_ip, name=None, admin_state_up=True):
+    def port_create(self, network_id, subnet_id, fixed_ip, name=None, admin_state_up=True, port_security_enabled=False):
         """
         create the port on a network
         :param network_id: the id of the attached network
@@ -283,7 +283,8 @@ class OpenStackAPI:
                         "ip_address": fixed_ip
                     }
                 ],
-                "admin_state_up": admin_state_up
+                "admin_state_up": admin_state_up,
+                "port_security_enabled": port_security_enabled
             }
         }
 
