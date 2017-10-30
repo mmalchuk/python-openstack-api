@@ -78,7 +78,8 @@ class OpenStackAPI:
             self.headers['X-Auth-Token'] = response.headers['X-Subject-Token']
             print("- success.")
         else:
-            die("! Authenticate Error ({}) : {}".format(identity_url, response.reason))
+            die("! Authenticate Error ({}) : {}"
+                .format(identity_url, response.reason))
 
         # fill the endpoints dictionary from the auth response
         for service in response.json()['token']['catalog']:
@@ -104,12 +105,47 @@ class OpenStackAPI:
         print("")
         print("* Creating the network '{}'...".format(name))
 
-        response = requests.post(self.endpoints['network'] + '/v2.0/networks', json=network, headers=self.headers)
+        response = requests.post(
+            self.endpoints['network'] + '/v2.0/networks',
+            json=network, headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.created):
             network = response.json()['network']
             print("- network ({}) created.".format(network['id']))
             return network
+        else:
+            die(response)
+
+    def network_list(self, list_limit=10000):
+        """
+        get list of the networks
+        :param list_limit: return maximum number of the networks
+        :return: list of the network objects
+        """
+
+        response = requests.get(
+            self.endpoints['network'] + '/v2.0/networks?limit={}'
+            .format(list_limit),
+            headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.ok):
+            networks = response.json()['networks']
+            return networks
+        else:
+            die(response)
+
+    def network_delete(self, network_id):
+        """
+        delete network
+        :param network_id: network id
+        :return: None
+        """
+        response = requests.delete(
+            self.endpoints['network'] + '/v2.0/networks/{}'.format(network_id),
+            headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.no_content):
+            print("- network '{}' deleted.".format(network_id))
         else:
             die(response)
 
@@ -120,14 +156,17 @@ class OpenStackAPI:
         :return: network object
         """
 
-        response = requests.get(self.endpoints['network'] + '/v2.0/networks?name={}'.format(name), headers=self.headers)
+        response = requests.get(
+            self.endpoints['network'] + '/v2.0/networks?name={}'.format(name),
+            headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.ok):
             return response.json()['networks'][0]
         else:
             die(response)
 
-    def subnet_create(self, network_id, name, cidr, enable_dhcp=False, gateway=None):
+    def subnet_create(self, network_id, name, cidr,
+                      enable_dhcp=False, gateway=None):
         """
         create subnet for the network
         :param network_id: the network id in which we create the subnet
@@ -152,7 +191,9 @@ class OpenStackAPI:
         print("")
         print("* Creating the subnet '{}'...".format(name))
 
-        response = requests.post(self.endpoints['network'] + '/v2.0/subnets', json=subnet, headers=self.headers)
+        response = requests.post(
+            self.endpoints['network'] + '/v2.0/subnets',
+            json=subnet, headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.created):
             subnet = response.json()['subnet']
@@ -161,8 +202,9 @@ class OpenStackAPI:
         else:
             die(response)
 
-    def instance_launch(self, name, image_id, flavor_id, networks=None, ports=None,
-                        config_drive=False, user_data=None, personality=None, metadata=None):
+    def server_create(self, name, image_id, flavor_id,
+                      networks=None, ports=None, config_drive=False,
+                      user_data=None, personality=None, metadata=None):
         """
         create and boot the server
         :param name: name of the server
@@ -202,14 +244,49 @@ class OpenStackAPI:
             server['server']['metadata'] = metadata
 
         print("")
-        print("* Launching the instance '{}'...".format(name))
+        print("* Launching the server '{}'...".format(name))
 
-        response = requests.post(self.endpoints['compute'] + '/servers', json=server, headers=self.headers)
+        response = requests.post(
+            self.endpoints['compute'] + '/servers',
+            json=server, headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.accepted):
             server = response.json()['server']
             print("- server ({}) created.".format(server['id']))
             return server
+        else:
+            die(response)
+
+    def server_list(self, list_limit=10000):
+        """
+        get list of the servers
+        :param list_limit: return maximum number of the servers
+        :return: list of the server objects
+        """
+
+        response = requests.get(
+            self.endpoints['compute'] + '/servers?limit={}'.format(list_limit),
+            headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.ok):
+            servers = response.json()['servers']
+            return servers
+        else:
+            die(response)
+
+    def server_delete(self, server_id):
+        """
+        terminate the server
+        :param server_id: server id
+        :return: None
+        """
+
+        response = requests.delete(
+            self.endpoints['compute'] + '/servers/{}'.format(server_id),
+            headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.no_content):
+            print("- server: '{}' terminated.".format(server_id))
         else:
             die(response)
 
@@ -232,7 +309,9 @@ class OpenStackAPI:
         print("")
         print("* Creating the router '{}'...".format(name))
 
-        response = requests.post(self.endpoints['network'] + '/v2.0/routers', json=router, headers=self.headers)
+        response = requests.post(
+            self.endpoints['network'] + '/v2.0/routers',
+            json=router, headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.created):
             router = response.json()['router']
@@ -243,19 +322,29 @@ class OpenStackAPI:
         interface = {"subnet_id": subnet_id}
 
         response = requests.put(
-            self.endpoints['network'] + '/v2.0/routers/{}/add_router_interface'.format(router['id']),
+            self.endpoints['network'] + '/v2.0/routers/{}/add_router_interface'
+            .format(router['id']),
             json=interface, headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.ok):
             interface = response.json()
-            print("- interface ({}) added to the router.".format(interface['id']))
+            print("- interface ({}) added to the router."
+                  .format(interface['id']))
         else:
             die(response)
 
-        gateway_info = {"router": {"external_gateway_info": {"network_id": ext_network_id}}}
+        gateway_info = {
+            "router": {
+                "external_gateway_info": {
+                    "network_id": ext_network_id
+                }
+            }
+        }
 
-        response = requests.put(self.endpoints['network'] + '/v2.0/routers/{}'.format(router['id']),
-                                json=gateway_info, headers=self.headers)
+        response = requests.put(
+            self.endpoints['network'] + '/v2.0/routers/{}'
+            .format(router['id']),
+            json=gateway_info, headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.ok):
             router = response.json()['router']
@@ -263,7 +352,84 @@ class OpenStackAPI:
         else:
             die(response)
 
-    def port_create(self, network_id, subnet_id, fixed_ip, name=None, admin_state_up=True, port_security_enabled=False):
+    def router_list(self, list_limit=10000):
+        """
+        get list of the routers
+        :param list_limit: return maximum number of the routers
+        :return: list of the router objects
+        """
+        response = requests.get(
+            self.endpoints['network'] + '/v2.0/routers?limit={}'
+            .format(list_limit),
+            headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.ok):
+            routers = response.json()['routers']
+            return routers
+        else:
+            die(response)
+
+    def router_clear_gateway(self, router_id):
+        """
+        clear gateway for the router
+        :param router_id: the router id
+        :return: None
+        """
+
+        gateway_info = {
+            "router": {
+                "external_gateway_info": {}
+            }
+        }
+
+        response = requests.put(
+            self.endpoints['network'] + '/v2.0/routers/{}'.format(router_id),
+            json=gateway_info, headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.ok):
+            print("- gateway from the router '{}' removed.".format(router_id))
+        else:
+            die(response)
+
+    def router_delete_interface(self, port_id, router_id):
+        """
+        delete interface from the router
+        :param port_id:
+        :param router_id:
+        :return:
+        """
+
+        interface = {"port_id": port_id}
+
+        response = requests.put(
+            self.endpoints['network'] +
+            '/v2.0/routers/{}/remove_router_interface'.format(router_id),
+            json=interface, headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.ok):
+            print("- port ({}) from the router '{}' removed."
+                  .format(port_id, router_id))
+        else:
+            die(response)
+
+    def router_delete(self, router_id):
+        """
+        delete router
+        :param router_id: router id
+        :return: None
+        """
+
+        response = requests.delete(
+            self.endpoints['network'] + '/v2.0/routers/{}'.format(router_id),
+            headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.no_content):
+            print("- router '{}' deleted.".format(router_id))
+        else:
+            die(response)
+
+    def port_create(self, network_id, subnet_id, fixed_ip, name=None,
+                    admin_state_up=True, port_security_enabled=False):
         """
         create the port on a network
         :param network_id: the id of the attached network
@@ -271,6 +437,7 @@ class OpenStackAPI:
         :param fixed_ip: the IP address for the port
         :param name: the name of the port (optional)
         :param admin_state_up: state of the port (optional)
+        :param port_security_enabled: anti-spoofing (optional)
         :return: port object
         """
 
@@ -292,14 +459,37 @@ class OpenStackAPI:
             port["port"]["name"] = name
 
         print("")
-        print("* Creating the port in subnet ({}) with ip '{}'...".format(subnet_id, fixed_ip))
+        print("* Creating the port in subnet ({}) with ip '{}'..."
+              .format(subnet_id, fixed_ip))
 
-        response = requests.post(self.endpoints['network'] + '/v2.0/ports', json=port, headers=self.headers)
+        response = requests.post(
+            self.endpoints['network'] + '/v2.0/ports',
+            json=port, headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.created):
             port = response.json()['port']
             print("- port ({}) created.".format(port['id']))
             return port
+        else:
+            die(response)
+
+    def port_list(self, list_filter):
+        """
+        list ports
+        :param list_filter: key-value to filter list
+        :return: list of the port objects
+        """
+
+        if list_filter:
+            list_filter = '?' + list_filter
+
+        response = requests.get(
+            self.endpoints['network'] + '/v2.0/ports{}'.format(list_filter),
+            headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.ok):
+            ports = response.json()['ports']
+            return ports
         else:
             die(response)
 
@@ -310,7 +500,9 @@ class OpenStackAPI:
         :return: None
         """
 
-        response = requests.delete(self.endpoints['network']+'/v2.0/ports/{}'.format(port_id), headers=self.headers)
+        response = requests.delete(
+            self.endpoints['network'] + '/v2.0/ports/{}'.format(port_id),
+            headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.no_content):
             print("- port ({}) deleted.".format(port_id))
@@ -320,13 +512,16 @@ class OpenStackAPI:
     def floatingip_create(self, floating_network_id, port_id):
         """
         create floating ip and associate to the port
-        :param floating_network_id: the id of the network associated with the floating IP
-        :param port_id: the id of the internal port be associated with the floating IP
+        :param floating_network_id: the id of the network associated with
+               the floating IP
+        :param port_id: the id of the internal port be associated with
+               the floating IP
         :return: floatingip object
         """
 
         print("")
-        print("* Creating the floating ip for the port '{}'...".format(port_id))
+        print("* Creating the floating ip for the port '{}'..."
+              .format(port_id))
 
         floatingip = {
             "floatingip": {
@@ -335,12 +530,52 @@ class OpenStackAPI:
             }
         }
 
-        response = requests.post(self.endpoints['network'] + '/v2.0/floatingips', json=floatingip, headers=self.headers)
+        response = requests.post(
+            self.endpoints['network'] + '/v2.0/floatingips',
+            json=floatingip, headers=self.headers)
 
         if response.ok and (response.status_code == requests.codes.created):
             floatingip = response.json()['floatingip']
             print("- created {}".format(floatingip['floating_ip_address']))
             return floatingip
+        else:
+            die(response)
+
+    def floatingip_list(self, list_filter=""):
+        """
+        list floating IPs
+        :param list_filter: key-value to filter list
+        :return: list of the floatingip objects
+        """
+
+        if list_filter:
+            list_filter = '?' + list_filter
+
+        response = requests.get(
+            self.endpoints['network'] + '/v2.0/floatingips{}'
+            .format(list_filter),
+            headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.ok):
+            floatingips = response.json()['floatingips']
+            return floatingips
+        else:
+            die(response)
+
+    def floatingip_delete(self, floatingip_id):
+        """
+        delete floating IP
+        :param floatingip_id:
+        :return: None
+        """
+
+        response = requests.delete(
+            self.endpoints['network'] + '/v2.0/floatingips/{}'
+            .format(floatingip_id),
+            headers=self.headers)
+
+        if response.ok and (response.status_code == requests.codes.no_content):
+            print("- floating ip '{}' deleted.".format(floatingip_id))
         else:
             die(response)
 
@@ -355,125 +590,44 @@ class OpenStackAPI:
         print("* Cleanup resources...")
 
         # remove routers, their interfaces, gateways and floating ips
-        response = requests.get(self.endpoints['network'] + '/v2.0/routers?limit=10000', headers=self.headers)
+        routers = self.router_list()
+        for router in routers:
+            if router['name'].startswith(prefix):
 
-        if response.ok and (response.status_code == requests.codes.ok):
-            for router in response.json()['routers']:
-                if router['name'].startswith(prefix):
+                # find floating ips related to the router
+                floatingips = self.floatingip_list('router_id={}'
+                                                   .format(router['id']))
+                for floatingip in floatingips:
+                    self.floatingip_delete(floatingip['id'])
 
-                    # find floating ips related to the router
-                    response = requests.get(
-                        self.endpoints['network'] + '/v2.0/floatingips?router_id={}'.format(router['id']),
-                        headers=self.headers)
+                # clear router gateway
+                if router['external_gateway_info']:
+                    self.router_clear_gateway(router['id'])
 
-                    if response.ok and (response.status_code == requests.codes.ok):
-                        for floatingip in response.json()['floatingips']:
+                # list ports and delete found interfaces
+                ports = self.port_list('device_id={}'.format(router['id']))
+                for port in ports:
+                    self.router_delete_interface(port['id'], router['id'])
 
-                            response = requests.delete(
-                                self.endpoints['network'] + '/v2.0/floatingips/{}'.format(floatingip['id']),
-                                headers=self.headers)
+                # delete the router itself
+                self.router_delete(router['id'])
 
-                            if response.ok and (response.status_code == requests.codes.no_content):
-                                print("- floating ip '{}' deleted.".format(floatingip['floating_ip_address']))
-                            else:
-                                die(response)
-                    else:
-                        die(response)
-
-                    # clear router gateway
-                    if router['external_gateway_info']:
-
-                        gateway_info = {"router": {"external_gateway_info": {}}}
-
-                        response = requests.put(self.endpoints['network'] + '/v2.0/routers/{}'.format(router['id']),
-                                                json=gateway_info, headers=self.headers)
-
-                        if response.ok and (response.status_code == requests.codes.ok):
-                            print("- gateway from the router '{}' removed.".format(router['name']))
-                        else:
-                            die(response)
-
-                    # list ports and delete found interfaces
-                    response = requests.get(self.endpoints['network'] + '/v2.0/ports?device_id={}'.format(router['id']),
-                                            headers=self.headers)
-
-                    if response.ok and (response.status_code == requests.codes.ok):
-                        for port in response.json()['ports']:
-
-                            interface = {"port_id": port['id']}
-
-                            response = requests.put(
-                                self.endpoints['network'] + '/v2.0/routers/{}/remove_router_interface'.format(
-                                    router['id']), json=interface, headers=self.headers)
-
-                            if response.ok and (response.status_code == requests.codes.ok):
-                                interface = response.json()
-                                print(
-                                    "- port ({}) from the router '{}' removed.".format(interface['port_id'],
-                                                                                       router['name']))
-                            else:
-                                die(response)
-                    else:
-                        die(response)
-
-                    # delete the router itself
-                    response = requests.delete(self.endpoints['network'] + '/v2.0/routers/{}'.format(router['id']),
-                                               headers=self.headers)
-
-                    if response.ok and (response.status_code == requests.codes.no_content):
-                        print("- router '{}' ({}) deleted.".format(router['name'], router['id']))
-                    else:
-                        die(response)
-        else:
-            die(response)
-
-        # remove instances
-        response = requests.get(self.endpoints['compute'] + '/servers?limit=10000', headers=self.headers)
-
-        if response.ok and (response.status_code == requests.codes.ok):
-            for server in response.json()['servers']:
-                if server['name'].startswith(prefix):
-
-                    response = requests.delete(self.endpoints['compute'] + '/servers/{}'.format(server['id']),
-                                               headers=self.headers)
-
-                    if response.ok and (response.status_code == requests.codes.no_content):
-                        print("- server: '{}' ({}) terminated.".format(server['name'], server['id']))
-                    else:
-                        die(response)
-        else:
-            die(response)
+        # remove servers
+        servers = self.server_list()
+        for server in servers:
+            if server['name'].startswith(prefix):
+                # delete the server
+                self.server_delete(server['id'])
 
         # remove networks, their subnets and ports
-        response = requests.get(self.endpoints['network'] + '/v2.0/networks?limit=10000', headers=self.headers)
+        networks = self.network_list()
+        for network in networks:
+            if network['name'].startswith(prefix):
 
-        if response.ok and (response.status_code == requests.codes.ok):
-            for network in response.json()['networks']:
-                if network['name'].startswith(prefix):
+                # list all ports on the network and delete them
+                ports = self.port_list('network_id={}'.format(network['id']))
+                for port in ports:
+                    self.port_delete(port['id'])
 
-                    response = requests.get(
-                        self.endpoints['network'] + '/v2.0/ports?network_id={}'.format(network['id']),
-                        headers=self.headers)
-
-                    if response.ok and (response.status_code == requests.codes.ok):
-                        for port in response.json()['ports']:
-
-                            response = requests.delete(self.endpoints['network'] + '/v2.0/ports/{}'.format(port['id']),
-                                                       headers=self.headers)
-
-                            if response.ok and (response.status_code == requests.codes.no_content):
-                                print("- port ({}) deleted.".format(port['id']))
-                            else:
-                                die(response)
-                    else:
-                        die(response)
-
-                    response = requests.delete(self.endpoints['network'] + '/v2.0/networks/{}'.format(network['id']),
-                                               headers=self.headers)
-
-                    if response.ok and (response.status_code == requests.codes.no_content):
-                        print("- network '{}' ({}) deleted.".format(network['name'], network['id']))
-                    else:
-                        die(response)
-        else:
-            die(response)
+                # delete the network itself
+                self.network_delete(network['id'])
